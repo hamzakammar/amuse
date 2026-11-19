@@ -17,6 +17,7 @@ It needs an OpenAI API key and PostgreSQL. No account, hosted service or other A
 - Approval cards for sends, form submissions, payments and new schedules, with once, task, site or always scopes
 - An encrypted vault for logins and API keys; the model only sees stand-in tokens
 - Voice mode with transcription and spoken replies
+- Optional MCP servers (stdio or streamable HTTP), off by default, with approvals before their tools run
 
 | Hatch your agent                     | Ask for an app, get a working one            |
 | ------------------------------------ | -------------------------------------------- |
@@ -62,14 +63,45 @@ your OpenAI project. Amuse also stops for the day at `AMUSE_DAILY_LIMIT` usage u
 default) and pauses background jobs until the next day. Models and every other setting are in
 [`.env.example`](.env.example).
 
-Besides OpenAI, Amuse only contacts the sites the agent visits for you and, for weather questions,
-the free [Open-Meteo](https://open-meteo.com/) API (weather data by Open-Meteo.com, CC BY 4.0). Fonts
-and every other asset are served locally.
+Besides OpenAI, Amuse only contacts the sites the agent visits for you, any MCP servers you configure
+and, for weather questions, the free [Open-Meteo](https://open-meteo.com/) API (weather data by
+Open-Meteo.com, CC BY 4.0). Fonts and every other asset are served locally.
+
+## MCP servers (optional)
+
+Amuse can use tools from [MCP](https://modelcontextprotocol.io) servers. It's off unless
+`AMUSE_MCP_CONFIG` points at a JSON file in the usual `mcpServers` shape:
+
+```json
+{
+  "mcpServers": {
+    "files": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/srv/notes"] },
+    "tracker": { "url": "https://tracker.example/mcp", "headers": { "Authorization": "Bearer ${TRACKER_TOKEN}" } }
+  }
+}
+```
+
+A server has either a `command` (stdio, with optional `args`, `env` and `cwd`) or a `url` (streamable
+HTTP, with optional `headers`). `${NAME}` in a value reads that environment variable, so tokens can
+stay out of the file. Amuse starts or connects to every server when it starts, and offers their tools
+to the agent as `mcp__<server>__<tool>`. A server that fails to start is logged and skipped.
+
+Each MCP tool call shows an approval card first, with once, task or always scopes, because Amuse can't
+know what a third-party tool does. If you trust a server to only read, add `"readOnly": true`: its
+calls then follow the rules for reading connected services: allowed, unless Settings › Permissions ›
+Connectors is set to Always ask. Results are treated as untrusted data, like web pages. `timeoutMs` sets
+the per-call timeout (60 seconds by default).
+
+Stdio servers run as the same user as Amuse and only get a minimal environment (`PATH`, `HOME` and
+similar) plus their own `env`, never your OpenAI key. HTTP servers are contacted at the address you
+configured, including local ones, so only add servers you trust. With Docker Compose, mount the
+config file into the container, and note that stdio commands run inside the container.
 
 ## Scope
 
 Amuse is deliberately small. It's a web app for one person on one computer, it uses OpenAI models
-only, and it connects to services through API keys and its live browser rather than MCP servers.
+only, and it connects to services through API keys, its live browser and, if you configure them, MCP
+servers.
 Notifications appear while an Amuse tab is open; there's no push to your phone yet.
 
 ## Security model

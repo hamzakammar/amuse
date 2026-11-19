@@ -90,6 +90,12 @@ await db.transaction(async (tx) => {
   await tx.update(agentsTable).set({ status: "Idle" });
 });
 
+if (process.env.AMUSE_MCP_CONFIG) {
+  const { startMcp } = await import("./agent/mcp");
+  const { registerTools } = await import("./agent/loop");
+  registerTools(await startMcp());
+}
+
 app.listen(port, host, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");

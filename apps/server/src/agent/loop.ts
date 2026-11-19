@@ -127,6 +127,15 @@ export const ALL_TOOLS: ToolDef[] = [
 ];
 const TOOL_MAP = new Map(ALL_TOOLS.concat([notifyTool]).map((t) => [t.name, t]));
 
+/** Adds tools found at startup (MCP servers) to the registry. */
+export function registerTools(tools: ToolDef[]) {
+  for (const t of tools) {
+    if (TOOL_MAP.has(t.name)) continue;
+    ALL_TOOLS.push(t);
+    TOOL_MAP.set(t.name, t);
+  }
+}
+
 // ---------- prompt ----------
 async function systemPrompt(userId: string, tz: string, trigger: string, chatKind: string, voice = false) {
   const [agent] = await db.select().from(agentsTable).where(eq(agentsTable.userId, userId));

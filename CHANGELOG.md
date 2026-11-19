@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Optional MCP client support: stdio and streamable HTTP servers configured in `AMUSE_MCP_CONFIG`,
+  with tools offered as `mcp__<server>__<tool>` behind approval cards. Off by default.
+
 ## 0.1.0 (unreleased)
 
 First public release.
